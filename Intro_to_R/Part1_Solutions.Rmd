@@ -1,0 +1,140 @@
+---
+title: "RPart1_Homework_Solutions"
+author: "NYC Data Science Academy"
+output: html_document
+---
+## Question #1	
+
+Compound interest can be computed using the formula
+$$A = P (1+\frac{r}{100}) ^n$$
+where P is the original money lent, A is what it amounts to in n years at R percent per year interest. Write an R command to calculate a vector of numbers indicating the amount of money owed (A) after n years, where n ranges from 1 to 15 in yearly increments. The original amount lent is 5000 dollars (P) and the interest rate remains constant throughout the period at 11.5% (r). 
+```{r}
+n = c(1:15)
+# or n = 1:15
+A = 5000 * (1 + 0.115) ^ n
+
+```
+
+## Question #2
+
+Assume that we have collected the heights and weights of four people. The heights (in cm) are 180, 165, 160, 193; the respective weights (in kg) are 87, 58, 65, 100. Create two vectors, `height` and `weight`, using the data. Body mass index (BMI) is defined as
+$$BMI = \frac{mass_{kg}}{height_{m}^2}$$
+Write an R command to make a vector calculating the BMI values for the four people. Be careful of the units! As a challenge, use the height vector to make a boolean vector named `tall` of the heights above 6 feet.
+```{r}
+weight = c(87, 58, 65, 100)
+height = c(180, 165, 160, 193)
+BMI = weight / (height/100) ^ 2
+tall = height[height >= 6*30.48]
+
+```
+
+
+## Question #3:
+
+1. From your RStudio, import the built-in cars dataset by running `data(cars)`.
+
+2. Print the first 5 lines from cars.
+
+3. Randomly generate a vector as long as the the number of rows in cars containing elements NY, CA or CT. Call the vector `state`. Run the code `set.seed(0)` on the line above your vector. This makes your results reproducible (anybody who runs the code `set.seed(0)` on their randomized vector will end up with the same random vector you generated). 
+
+4. Add state to the data frame cars as a new column. Again name the column `state`.
+
+5. Create a new column `ratio` whose value is the ratio `dist`/`speed`. Then compute the average and standard deviation of that column.
+```{r}
+data(cars)
+print(cars[1:5,])
+set.seed(0)
+state = sample(c('NY', 'CA', 'CT'), dim(cars)[1], replace=TRUE) # you can also use nrow(cars)
+cars$state = state
+cars$ratio = cars$dist / cars$speed
+avg = mean(cars$ratio)
+std_dev = sd(cars$ratio)
+```
+
+
+## Question #4: 
+
+Use `TimesSquareSignage.csv` in the homework folder and import it into R as `ts_data`. Then check the following features of the dataset:
+
+1. The number of observations and the number of variables.
+
+2. The type (`class`) of each variable.
+
+3. How many missing values are there in the dataset?
+
+4. Which rows (people) have missing values? Which columns (variables) include missing values?
+```{r}
+# 4.1
+ts_data = read.csv('https://s3.amazonaws.com/graderdata/TimesSquareSignage.csv', stringsAsFactors=FALSE)
+class(ts_data)
+dim(ts_data)    #184 observations, 18 variables
+
+# 4.2
+str(ts_data)
+sapply(ts_data, class)
+# Note:
+# http://stackoverflow.com/questions/21125222/determine-the-data-types-of-an-r-data-frames-columns
+# http://stackoverflow.com/questions/8855589/a-comprehensive-survey-of-the-types-of-things-in-r-mode-and-class-and-type
+
+# 4.3
+sum( is.na(ts_data) )
+# There are 520 missing values in total.
+
+# Note:
+# Compare the result with 
+sum(!complete.cases(ts_data))
+# Why are the results are different?
+
+# 4.4
+#?which
+# http://stackoverflow.com/questions/6918657/whats-the-use-of-which
+
+# rows w/missing data
+which( rowSums( is.na(ts_data) ) != 0 )
+# These are indices of rows that have missing values
+
+# columns w/missing data
+index = which( colSums( is.na(ts_data) ) != 0 )
+names(ts_data)[index]
+# These are variables with missing values
+
+# Another way of finding the ros and columns
+#?any
+which(apply(ts_data,1,function(x){any(is.na(x))}))
+which(apply(ts_data,2,function(x){any(is.na(x))}))
+```
+
+## Question #5:
+
+From the Time Square dataset, we'd like to extract specific information about advertising in Midtown Manhattan. Obtain the following data frames and save them in a subfolder named `data` in your current directory as CSV files:
+
+1. Observations from Upper Broadway. Save as `UpperBway.csv`.
+
+2. Observations with greater-than-average square footage. Save as `SF.csv`.
+
+3. The name, address, and location of the ten signs with the largest total square footage. Save as `TopTen.csv`. 
+```{r}
+# 5.1
+data_sub1 = ts_data[ts_data$Location == 'Upper Bway', ]
+head(data_sub1[,c(1,4)])
+#write.csv(data_sub1, file='data/UpperBway.csv')
+
+# 5.2
+ave = mean(ts_data$SF)
+data_sub2 = ts_data[ts_data$SF > ave, ]
+head(data_sub2[,c(1,10)])
+#write.csv(data_sub2, file='data/SF.csv')
+
+# 5.3
+data_sub3 = ts_data[order(ts_data$TOTAL.SF, decreasing = TRUE), c(1,2,4,17)]
+data_sub3 = data_sub3[1:10, ]
+head(data_sub3[,c(1,4)])
+#write.csv(data_sub3, file='data/TopTen.csv')
+
+
+
+```
+
+
+
+
