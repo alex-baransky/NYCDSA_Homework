@@ -129,20 +129,21 @@ CL = read.csv('https://s3.amazonaws.com/graderdata/Champions.csv', stringsAsFact
 hometeam_wins = CL %>% 
                 filter(., HomeGoal > AwayGoal) %>% 
                 tbl_df(.)
-Barc_or_RealMad = CL %>%
+barc_or_realmad = CL %>%
                   filter(., HomeTeam=='Barcelona' | HomeTeam=='Real Madrid')
+winning_barc_or_realmad = semi_join(hometeam_wins, barc_or_realmad, by="X")
 # 2
 hometeam_vars = CL %>%
                 select(., contains('Home'))
 six_vars = CL %>% 
-           select(., HomeTeam, AwayTeam, HomeGoal, AwayGoal, HomeCorner, AwayCorner)
+           select(., contains('Team'), contains('Goal'), contains('Corner'))
 # 3
 arranges_six = six_vars %>% 
                arrange(., desc(HomeGoal))
 # 4
 hometeam_stats = CL %>% 
                  group_by(., HomeTeam) %>% 
-                 summarise(., avg_homegoal=mean(HomeGoal), avg_homepossession = mean(HomePossession), avg_homeyellow=mean(HomeYellow))
+                 summarise(., avg_homegoal=round(mean(HomeGoal), 2), avg_homepossession = round(mean(HomePossession), 2), avg_homeyellow=round(mean(HomeYellow), 2))
 # 5
 top_five_scores = CL %>%
                   mutate(., score = ifelse(HomeGoal>AwayGoal, 
