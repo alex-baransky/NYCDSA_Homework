@@ -102,7 +102,9 @@ Download the names.zip file from [here](https://s3.amazonaws.com/graderdata/name
 
 
 ```{r babyNames}
-
+temp = list.files(path = 'names/', pattern="*.txt")
+temp_correct = as.vector(lapply('./names/', paste0, temp))
+myfiles = sapply(temp_correct, function(x) read.csv(x, stringsAsFactors = FALSE))
 ```
 
 
