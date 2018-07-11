@@ -79,10 +79,36 @@ nyc_jobs$Salary.Range.To = with(nyc_jobs, as.numeric(Salary.Range.To) * yearly(S
 
 mean_median = nyc_jobs %>%
            group_by(., Agency) %>%
-           summarise(., low_avg = mean(Salary.Range.From, na.rm = TRUE),
-                        low_med = median(Salary.Range.From, na.rm = TRUE),
-                        high_avg = mean(Salary.Range.To, na.rm = TRUE),
-                        high_med = median(Salary.Range.To, na.rm = TRUE))
+           summarise(., low_avg = mean(Salary.Range.From),
+                        low_med = median(Salary.Range.From),
+                        high_avg = mean(Salary.Range.To),
+                        high_med = median(Salary.Range.To))
+# 2
+company_lowend = nyc_jobs %>%
+                 group_by(., Agency) %>%
+                 summarise(., avg_lowend = mean(Salary.Range.From)) %>% 
+                 arrange(., desc(avg_lowend)) %>%
+                 head(., 1)
+# 3
+nyc_jobs = mutate(nyc_jobs, Salary.Range = Salary.Range.To - Salary.Range.From)
+int_v_ext = nyc_jobs %>%
+            group_by(., Posting.Type) %>%
+            summarise(., avg_range = mean(Salary.Range))
+# 4
+levels_rank = nyc_jobs %>%
+              group_by(., Level) %>%
+              summarise(., avg_range = mean(Salary.Range)) %>% 
+              arrange(., desc(avg_range))
+# 5
+expenses_range = nyc_jobs %>%
+                 group_by(., Agency) %>%
+                 summarise(., min_expenses = sum(Salary.Range.From * X..Of.Positions), max_expenses = sum(Salary.Range.To * X..Of.Positions))
+# 6
+largest_civil_range = nyc_jobs %>%
+                      group_by(., Civil.Service.Title) %>% 
+                      summarise(., max_range = max(Salary.Range)) %>% 
+                      arrange(., desc(max_range)) %>%
+                      head(., 1)
 ```
 
 
@@ -99,4 +125,30 @@ Load the Champion's League dataset, `Champions.csv`. The dataset records 100 Lea
 
 ```{r}
 CL = read.csv('https://s3.amazonaws.com/graderdata/Champions.csv', stringsAsFactors=FALSE)
+# 1
+hometeam_wins = CL %>% 
+                filter(., HomeGoal > AwayGoal) %>% 
+                tbl_df(.)
+Barc_or_RealMad = CL %>%
+                  filter(., HomeTeam=='Barcelona' | HomeTeam=='Real Madrid')
+# 2
+hometeam_vars = CL %>%
+                select(., contains('Home'))
+six_vars = CL %>% 
+           select(., HomeTeam, AwayTeam, HomeGoal, AwayGoal, HomeCorner, AwayCorner)
+# 3
+arranges_six = six_vars %>% 
+               arrange(., desc(HomeGoal))
+# 4
+hometeam_stats = CL %>% 
+                 group_by(., HomeTeam) %>% 
+                 summarise(., avg_homegoal=mean(HomeGoal), avg_homepossession = mean(HomePossession), avg_homeyellow=mean(HomeYellow))
+# 5
+top_five_scores = CL %>%
+                  mutate(., score = ifelse(HomeGoal>AwayGoal, 
+                                    paste0(HomeGoal, ':', AwayGoal), 
+                                    paste0(AwayGoal, ':', HomeGoal))) %>%
+                  group_by(., score) %>% 
+                  summarise(., score_freq=n()) %>% 
+                  arrange(., desc(score_freq))
 ```
