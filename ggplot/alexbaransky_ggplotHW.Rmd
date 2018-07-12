@@ -102,9 +102,57 @@ Download the names.zip file from [here](https://s3.amazonaws.com/graderdata/name
 
 
 ```{r babyNames}
-temp = list.files(path = 'names/', pattern="*.txt")
-temp_correct = as.vector(lapply('./names/', paste0, temp))
-myfiles = sapply(temp_correct, function(x) read.csv(x, stringsAsFactors = FALSE))
+first_df = read.csv('./names/yob1880.txt', header = FALSE, stringsAsFactors = FALSE)
+my_files = list.files(path = './names', pattern = '*.txt', full.names = TRUE)
+my_df = lapply(my_files, function(x) read.csv(x, header = FALSE, stringsAsFactors = FALSE))
+year_vec = 1880:2014
+for (i in 1:length(my_df)){
+  colnames(my_df[[i]]) = c('name', 'sex', 'number')
+  my_df[[i]] = mutate(my_df[[i]], year = year_vec[i])
+}
+full_df = do.call('rbind', my_df)
+
+# 1
+df_2014 = full_df[full_df$year==2014,]
+g_2014 = df_2014[grepl('^G', df_2014$name),]
+g_2014_unique = g_2014$name %>% 
+                unique(.) %>%
+                length(.)
+# 2
+k_2014_number = df_2014[grepl('^K', df_2014$name),] %>%
+                summarise(., total_babies = sum(number))
+# 3
+unisex_names = df_2014 %>%
+             group_by(., name) %>% 
+             mutate(., unisex = ifelse(n() > 1, TRUE, FALSE)) %>%
+             filter(., unisex==TRUE) %>%
+             nrow(.)/2
+# 4
+uni_freq = df_2014 %>% 
+           group_by(., name) %>%
+           summarise(., total_number = sum(number)) %>%
+           arrange(., desc(total_number)) %>%
+           filter(., total_number > 5000 & total_number < 6000)
+# 5
+first_letter = df_2014 %>% 
+               mutate(., first_letter = substr(name, 1, 1)) %>%
+               group_by(., first_letter) %>%
+               summarise(., all_first_letter = sum(number))
+first_letter_graph = ggplot(first_letter, aes(x = first_letter, y = all_first_letter)) + geom_bar(stat = 'identity')
+# 6
+props = full_df %>%
+        group_by(., year) %>%
+        mutate(., prop = number/sum(number))
+props = props %>%
+        group_by(., name, year) %>%
+        mutate(., prop = sum(prop)) %>%
+        filter(., name %in% c('Chris', 'Christian', 'Christopher'))
+props_graph = ggplot(props, aes(x=year, y=prop, color=name)) + geom_line()
+# 7
+male_v_fem = full_df %>%
+             group_by(., sex, year) %>%
+             summarise(., num_babies = sum(number))
+male_fem_graph = ggplot(male_v_fem, aes(x=year, y=num_babies, color=sex)) + geom_line()
 ```
 
 
