@@ -21,7 +21,9 @@ cars_scatter_labeled = cars_scatter + xlab('Speed (mpg)') + ylab('Stopping Dista
                        ggtitle('Stopping Distance at Different Speeds')
 # 3
 cars_scatter_triangles = ggplot(data = cars, aes(x = speed, y = dist)) +
-                         geom_point(col = 'red', pch=17)
+                         geom_point(col = 'red', pch=17) +
+                         xlab('Speed (mpg)') + ylab('Stopping Distance (ft)') +
+                         ggtitle('Stopping Distance at Different Speeds')
 ```
 
 ## Question 2: Boxplot and Density Curves
