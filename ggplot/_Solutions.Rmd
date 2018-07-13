@@ -1,0 +1,198 @@
+---
+title: "R_Data_Visualization_HW_Solutions"
+author: "NYC Data Science Academy"
+output: html_document
+---
+## Question #1: Scatterplot	
+
+The data frame cars in the datasets package records the speed (in mph) and stopping distance (in ft) for 50 cars. Load the dataset using `data(cars)`
+
+1. Create a scatterplot of `dist` (y-axis) vs. `speed` (x-axis).
+2. Refine the basic plot by labeling the x-axis with "Speed (mpg)" and the y-axis with "Stopping Distance (ft)". Also add a title to the plot.
+3. Revise the plot by changing the every point from the default open circles to red filled triangles (`col="red", pch=17`).
+
+```{r cars, warning=FALSE, message = FALSE}
+
+# Question 1
+
+library(ggplot2)
+data(cars)
+plot(cars$speed,cars$dist)
+
+ggplot(data = cars , aes(x = speed, y=dist))+
+  geom_point(col="red",pch = 17)+
+  xlab("Speed (mpg)")+
+  ylab("Stopping Distance (ft)")+
+  ggtitle("Relationship between Speed and Stopping Distance ")
+
+
+```
+
+## Question 2: Boxplot and Density Curves
+
+The dataset `faithful` contains the duration of the eruptions (in minutes) and the waiting time before that eruption (in minutes) for the Old Faithful geyser. Load the dataset using `data(faithful)`.
+
+1. In the faithful data frame, add a variable `length` that is "short" if the eruption is less than 3.2 minutes, and "long" otherwise.
+2. Create parallel boxplots of the waiting times for the "short" and "long" eruptions.
+3. Create overlapping density curves of the waiting times of the "short" and "long" eruptions.
+4. Briefly describe your findings from the boxplots and the density curves.
+
+
+```{r faithful}
+
+# Question 2
+data(faithful)
+
+# 2.1
+faithful$length = ifelse(faithful$eruptions < 3.2,
+                         "short", "long")
+faithful$length = as.factor(faithful$length)
+class(faithful$length)
+
+# 2.2
+ggplot(faithful, aes(x = length, y = waiting)) +
+  geom_boxplot()
+
+# 2.3
+ggplot(faithful, aes(x = waiting))+
+  geom_density(aes(color = length))
+
+# 2.4
+# It seems that shorter wait times correspond to shorter eruption times
+# Maybe if there is less waiting time, there is less build up, # and thus the eruption is shorter. 
+
+```
+
+## Question 3: Bar Plot and Histograms
+
+Load the New York Knicks dataset, `Knicks.rda`. You will see a dataframe called `data` in your environment.
+
+1. Calculate the winning ratio of New York Knicks in different seasons. Visualize how the winning ratio changes every year. (A bar plot is the most appropriate here.)
+2. Calculate the winning ratio for both home and away games. (The row labelled with `visiting = 1` is an away game.) Create a bar plot to show home and away winning ratios for each season.
+3. Plot five histograms to display the distribution of points in each season.
+4. (**Challenge**) Calculate the average winning ratio and the average point-difference (i.e., `points-opp`) by each opponent. Create a scatter-plot to show winning ratio versus average point-difference. What pattern do you see in the graph?
+
+
+```{r NBA}
+
+# Question 3
+library(dplyr)
+load(url('https://s3.amazonaws.com/graderdata/Knicks.rda'))
+knicks <- tbl_df(data)
+
+# 3.1
+knicks1 <- group_by(knicks, season) %>%
+  summarise(ratio=sum(win=="W")/n())
+
+ggplot(knicks1, aes(x=season, y=ratio)) + geom_bar(stat="identity")
+
+# 3.2
+knicks2 <- group_by(knicks, season, visiting) %>%
+  summarise(ratio=sum(win=="W")/n())
+
+ggplot(knicks2, aes(x=season,y=ratio)) +
+  geom_bar(aes(fill=visiting), stat='identity',position='dodge')
+
+# 3.3
+ggplot(knicks,aes(x=points)) +
+  geom_histogram()+
+  facet_wrap(~season)
+
+#### Difference between facet_wrap and facet_grid 
+#### https://www3.nd.edu/~steve/computing_with_data/13_Facets/facets.html
+
+# 3.4
+knicks3 <- group_by(knicks, opponent) %>%
+  summarise(ratio=sum(win=="W")/n(), diff=mean(points-opp))
+
+ggplot(knicks3,aes(x=diff, y=ratio)) +
+  geom_point(color='red4',size=4)+
+  geom_hline(yintercept=0.5,colour='grey20',size=0.5,linetype=2)+
+  geom_vline(xintercept=0,colour='grey20',size=0.5,linetype=2)+
+  geom_text(aes(x=diff,y=ratio,label=opponent),
+            hjust=0.7, vjust=1.4,angle = -30)+
+  theme_bw()
+
+# The plot shows that the more favorable the point differece, the higher the  win ratio, which sounds reasonable
+
+```
+
+## Question 4: Baby Names
+
+Download the names.zip file from [here](https://s3.amazonaws.com/graderdata/names.zip). In the folder, you will find national data on the relative frequency of given names in the population of U.S. births where the individual has a social security number. For each year of birth YYYY after 1879, a comma-delimited file was created with a name format "yobYYYY.txt". Each record in the individual annual files has the format `name, sex, number` where `name` is 2 to 15 characters, `sex` is M (male) or F (female) and `number` is the number of occurrences of the name. Respond the following questions using the files in this database:
+
+1. Write an R script to find how many unique names starting with "G" were given to babies in 2014.
+2. How many babies were given a name starting with "K" in 2014?
+3. How many names were given to both female and male babies in 2014? (i.e., The name "Jordan" counts because it was given to 6810 males and 1300 females that year.)
+4. Write an R script to display the names with frequency between 5000 and 6000 in 2014. (*Hint: Be sure to first add the frequencies together for any name given to both males and females*.)
+5. Create a bar plot showing the number of babies with names starting with A,B,C,D, ... Z for 2014. 
+6. (**Challenge**) Create a line plot showing the change across years in proportion of babies with the names "Chris", "Christian", and "Christopher".
+7. (**Challenge**) Create a line plot showing the change across years in number of male and female babies. 
+
+
+```{r babyNames}
+
+# Question 4
+# 4.1
+library(dplyr)
+yob2014<- read.csv("names/yob2014.txt", 
+                     header = FALSE,
+                     col.names = c("name","sex","number"),
+                     stringsAsFactors = FALSE)
+yob2014$initial<- substring(yob2014$name, first = 1, last = 1) 
+#first tells you to start by grabbing the first character, 
+#last tells you to stop after grabbing the first character
+
+subset <- dplyr::filter(yob2014, initial=="G") 
+nlevels(as.factor(subset$name))
+
+# 4.2
+subset <- filter(yob2014, initial=="K")
+sum(subset$number)
+
+# 4.3
+male <- filter(yob2014, sex=="M")
+female <- filter(yob2014, sex=="F")
+nrow(inner_join(male, female, by="name"))
+
+# 4.4
+group_by(yob2014, name) %>% 
+  summarise(total=sum(number)) %>%
+  filter(total >= 5000 & total <= 6000)
+                
+# 4.5
+names <- group_by(yob2014, initial) %>%
+        summarise(total = sum(number))
+
+ggplot(names) + 
+  geom_bar(aes(x=initial, y=total), stat='identity')
+
+# 4.6
+# Get the files names
+setwd('names')
+files = list.files(pattern="*.txt")
+# First apply read.csv, then rbind
+handle_each <- function(x){
+  year <- as.numeric(gsub("[^\\d]+", "", x, perl=TRUE))
+  temp <- read.csv(x, header = FALSE,  col.names = c("name","sex","number"))
+  temp$year <- year
+  return(temp)
+}
+myfiles = do.call(rbind, lapply(files, handle_each))
+ccc = myfiles[with(myfiles, name %in% c('Chris', 'Christian', 'Christopher')), ]
+
+total = group_by(myfiles, year) %>% summarise(total_number=sum(number))
+sub = group_by(ccc, name, year) %>% summarise(number=sum(number))
+result = left_join(sub, total, by="year") %>% mutate(ratio=number/total_number)
+
+ggplot(data=result, aes(x=year, y=ratio)) +
+  geom_line(aes(color=name))
+
+# 4.7
+sex = group_by(myfiles, year, sex) %>% summarise(number=sum(number))
+ggplot(data=sex, aes(x=year, y=number)) +
+  geom_line(aes(color=sex))
+
+```
+
+
