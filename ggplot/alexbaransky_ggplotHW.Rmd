@@ -79,7 +79,7 @@ seasonal_homeaway = ggplot(knicks_homeaway, aes(x=season, y=ratio)) +
                     geom_bar(aes(fill=visiting), stat='identity', position = 'dodge')
 # 3
 seasonal_pointdist = ggplot(data, aes(x=points)) +
-                     geom_histogram(binwidth = 3) +
+                     geom_histogram(binwidth = 2) +
                      facet_wrap(~ season)
 # 4
 opponent_stats = data %>%

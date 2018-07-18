@@ -140,7 +140,7 @@ yob2014<- read.csv("names/yob2014.txt",
                      col.names = c("name","sex","number"),
                      stringsAsFactors = FALSE)
 yob2014$initial<- substring(yob2014$name, first = 1, last = 1) 
-#first tells you to start by grabbing the first character, 
+# first tells you to start by grabbing the first character,
 #last tells you to stop after grabbing the first character
 
 subset <- dplyr::filter(yob2014, initial=="G") 
