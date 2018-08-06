@@ -1,0 +1,226 @@
+---
+title: "Missingness_Imputation_Homework"
+author: "Alex Baransky"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+## Question #1: Missingness & Imputation for the Titanic Dataset
+Load the `titanic3` dataset from the `PASWR` library; this dataset describes the survival status of individual passengers from the Titanic voyage. There are 14 different variables, some of which have quite a bit of missingness.
+
+1. How many variables contain at least one missing value?
+    + What are these variables?
+    + For each variable, what is the extent of missingness (how many missing values are there and what is the percentage of missingness)?
+
+```{r}
+library(PASWR)
+data("titanic3")
+
+titanic3[titanic3 == ''] = NA
+colnames(titanic3)[colSums(is.na(titanic3)) > 0]
+sum(is.na(titanic3$age))
+sum(is.na(titanic3$age))/length(titanic3$age)
+sum(is.na(titanic3$fare))
+sum(is.na(titanic3$fare))/length(titanic3$fare)
+sum(is.na(titanic3$cabin))
+sum(is.na(titanic3$cabin))/length(titanic3$cabin)
+sum(is.na(titanic3$embarked))
+sum(is.na(titanic3$embarked))/length(titanic3$embarked)
+sum(is.na(titanic3$boat))
+sum(is.na(titanic3$boat))/length(titanic3$boat)
+sum(is.na(titanic3$body))
+sum(is.na(titanic3$body))/length(titanic3$body)
+sum(is.na(titanic3$home.dest))
+sum(is.na(titanic3$home.dest))/length(titanic3$home.dest)
+```
+
+
+2. How many observations contain at least one missing value?
+    + What is the percentage of missingness from an observation standpoint? (Hint: the complete.cases() function might be useful here).
+
+```{r}
+sum(rowSums(is.na(titanic3)) > 0)
+nrow(titanic3[!complete.cases(titanic3),])/nrow(titanic3)
+```
+
+
+3. How many cells in the data are missing values?
+    + What is the percentage of missingness from a dataset standpoint?
+
+```{r}
+sum(is.na(titanic3))
+sum(is.na(titanic3))/sum(is.na(titanic3) + !is.na(titanic3))
+
+```
+
+
+4. What are the different combinations of missingness in the dataset?
+```{r}
+library(VIM)
+library(mice)
+md.pattern(titanic3)
+aggr(titanic3)
+```
+
+
+5. What kind of missingness do you have for each variable that contains missing values? Give a reason and scenario as to why you believe this.
+
+```{r}
+# Body ID number could be missing because those who survived don't have one and many bodies were not recovered of those who didn't survive
+# Cabin and boat are also hard to confirm because they are not normally memorable
+
+```
+
+6. Impute using mean value imputation for the age variable.
+    + Graph the distributions of the age variable before and after mean value imputation. Describe what you see. What problems may arise?
+    
+```{r}
+library(Hmisc)
+meanage_titanic = titanic3
+meanage_titanic$age = impute(meanage_titanic$age, mean)
+hist(titanic3$age)
+hist(meanage_titanic$age)
+
+# There is a significant increase in people aged around 30 y/o when the mean is imputed.
+```
+
+
+7. Impute using simple random imputation for the age variable.
+    + Graph the distributions of the age variable before and after simple random imputation. Describe what you see. What problems may arise?
+
+```{r}
+set.seed(0)
+imputed = titanic3
+imputed$age = impute(imputed$age, 'random')
+hist(titanic3$age)
+hist(imputed$age)
+
+# The graphs look very similar, however they may be a trend in the age of people who did not survive (i.e. older people may have been more likely to die)
+```
+
+
+## Question #2: K-Nearest Neighbors with the Titanic Dataset
+Continue with the `titanic3` dataset from the `PASWR` library.
+
+1. Impute using the single missing value of the fare variable using simple random imputation. What value was imputed?
+
+```{r}
+set.seed(0)
+
+imputed$fare = impute(imputed$fare, 'random')
+imputed$fare[is.imputed(imputed$fare)]
+```
+
+
+2. Plot the simple random imputation of fare against the simple random imputation of age; color this plot by pclass. Describe any trends.
+
+```{r}
+plot(imputed$fare ~ imputed$age, col=imputed$pclass)
+```
+
+
+3. Add two points to your plot representing the following passengers:
+    + A 50 year old who paid $400 for their ticket.
+    + A 10 year old whose parents paid $100 for their ticket.
+    
+```{r}
+plot(imputed$fare ~ imputed$age, col=imputed$pclass)
+points(c(50,10), c(400, 100), pch = 9)
+
+```
+
+
+4. What classes would you think these new individuals would belong to?
+
+```{text}
+50 y/o 1st, 10 y/o 1st or maybe 2nd
+
+```
+
+
+5. Impute the missing class values for the new passengers using 1 Nearest Neighbor. What were the predicted classes for each passenger?
+
+```{r}
+imputed = rbind(imputed, c(NA, NA, NA, NA, 50, NA, NA, NA, 400, NA, NA, NA, NA, NA))
+imputed = rbind(imputed, c(NA, NA, NA, NA, 10, NA, NA, NA, 100, NA, NA, NA, NA, NA))
+imputed.1nn = kNN(imputed[,c('pclass', 'age', 'fare')], k=1)
+
+# Both predicted 1st class
+```
+
+
+6. Impute the missing class values for the new passengers using the $\sqrt{n}$ Nearest Neighbor rule. What were the predicted classes for each passenger? Why did they change/not change?
+
+```{r}
+imputed.sqrtn = kNN(imputed[,c('pclass', 'age', 'fare')], k=sqrt(nrow(imputed)))
+
+# The child got placed in 3rd class because he is much closer to the bottom near other 3rd class passengers
+```
+
+## Question #3: Minkowski Distances with the Titanic Dataset
+Continue with the `titanic3` dataset from the `PASWR` library.
+
+1. Create a new data frame that includes:
+    + The pclass, survived, sex, age, sibsp, and parch variables from the original `titanic3` dataset.
+    + The simple random imputation of the fare variable you created above.
+
+```{r}
+# Your code here
+
+```
+
+
+2. Separate this new data frame into two separate data frames as follows (note that there should be no observations that appear in both data frames):
+    + For observations that are totally complete: all variables.
+    + For observations that are missing a value for age: all variables except age.
+
+```{r}
+# Your code here
+
+```
+
+
+3. Use 1 Nearest Neighbor to impute using:
+    + Manhattan distance.
+    + Euclidean distance.
+    + Minkowski distance with $p = 10$.
+
+```{r}
+# Your code here
+
+```
+
+
+4. Overlay and label four separate density curves: one for each of the three 1 Nearest Neighbor imputed age values, and one for the original complete age observations. Describe what you see any why this might be occurring.
+
+```{r}
+# Your code here
+
+```
+
+
+5. Use the $\sqrt{n}$ Nearest Neighbor rule to impute using:
+    + Manhattan distance.
+    + Euclidean distance.
+    + Minkowski distance with $p = 10$.
+
+```{r}
+# Your code here
+
+```
+
+
+6. Repeat part 4 with the $\sqrt{n}$ Nearest Neighbor solutions. What is happening here?
+
+```{r}
+# Your code here
+
+```
+
+
+
+
