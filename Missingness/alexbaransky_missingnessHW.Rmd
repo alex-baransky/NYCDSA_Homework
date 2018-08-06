@@ -169,8 +169,10 @@ Continue with the `titanic3` dataset from the `PASWR` library.
     + The simple random imputation of the fare variable you created above.
 
 ```{r}
-# Your code here
-
+library(dplyr)
+new.data = titanic3 %>% 
+  select(pclass, survived, sex, age, sibsp, parch)
+new.data = cbind(new.data, imputed.sqrtn$fare)
 ```
 
 
@@ -179,8 +181,10 @@ Continue with the `titanic3` dataset from the `PASWR` library.
     + For observations that are missing a value for age: all variables except age.
 
 ```{r}
-# Your code here
-
+complete_obs = new.data[rowSums(is.na(new.data)) == 0,]
+missing_obs = new.data %>% 
+  filter(is.na(age)) %>% 
+  select(-age)
 ```
 
 
@@ -190,8 +194,11 @@ Continue with the `titanic3` dataset from the `PASWR` library.
     + Minkowski distance with $p = 10$.
 
 ```{r}
-# Your code here
-
+library(kknn)
+manhattan = kknn(age ~ ., complete_obs, missing_obs, k = 1, distance = 1)
+euclidean = kknn(age ~ ., complete_obs, missing_obs, k = 1, distance = 2)
+minkowski_p10 = kknn(age ~ ., complete_obs, missing_obs, k = 1, distance = 10)
+summary(manhattan)
 ```
 
 
