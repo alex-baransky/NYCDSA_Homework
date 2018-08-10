@@ -1,0 +1,128 @@
+---
+title: "Multiple_Linear_Regression_Homework"
+author: "Alex Baransky"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
+```
+
+## Question #1: NYC Restaurants Data
+**Purpose: Demonstrate Understanding to Run Model**
+
+1. Load: Load the NYC Restaurants.txt dataset into your workspace. This dataset contains survey results from customers of 168 different Italian restaurants in the New York City area. The data are in the form of the average of customer views on various attributes (food, decor, and service) scored on a scale from 1 to 30, along with the average price of dinner. There is also a categorical variable for the location of the restaurant.
+```{r}
+restaurants = read.table("https://s3.amazonaws.com/nycdsabt01/NYC_Restaurants.txt")
+```
+
+2. Plot: Create a scatterplot matrix of all continuous variables colored by Location. From this plot alone, list at least one issue that may arise for multiple linear regression.
+```{r}
+plot(restaurants, col = restaurants$Location)
+# Price and decor might be colinear
+```
+
+3. Fit a Model: Fit a multiple linear regression predicting the price of a meal based on the customer views and location of the restaurant. For this model:
+a. Write out the regression equation.
+b. Interpret the meaning each of the 5 coefficients in context of the problem.
+c. Are the coefficients significant? How can you tell?
+d. Is the overall regression significant? How can you tell?
+e. Find and interpret the RSE.
+f. Find and interpret the adjusted coefficient of determination.
+```{r}
+model.saturated = lm(Price ~ . - Restaurant, data = restaurants)
+summary(model.saturated)
+
+```
+
+4. Diagnostics: Investigate the assumptions of the model using the plot() function. Are there any violations?
+plot(model.saturated)
+```{r}
+plot(model.saturated)
+
+```
+
+5. Outliers: Investigate the influence plot for the model. Are there any restaurants about which we should be concerned?
+```{r}
+library(car)
+influencePlot(model.saturated)
+
+```
+
+6. Multicollinearity: Investigate the coefficient variance inflation factors; use these values to discuss multicollinearity.
+```{r}
+vif(model.saturated)
+# no coefficients greater than 5, but service might be an issue
+```
+
+7. A-V Plots: Create added variable plots for this model. What conclusions might you draw from these plots?
+```{r, warning = FALSE}
+avPlots(model.saturated)
+```
+
+8. Simple Linear Regression: Fit a new simple linear regression that predicts the price of dinner from the service rating alone. Discuss this regression in light of your answer to part 6.
+```{r}
+model.service = lm(Price ~ Service, data = restaurants)
+summary(model.service)
+```
+
+## Question #2: NYC Restaurants Data
+**Purpose: Understanding Model Selection and Comparison**
+
+1. Fit Models: Try running two different models to compare with your saturated model. First, regress the price of dinner on food and decor. Then, regress the price of dinner on food, decor, and location. 
+For each model, hit each of the questions described in Section 1.3.a-f above. Also check your MLR assumption diagnostics and comment on multicollinearity. 
+```{r}
+model.two = lm(Price ~ Food + Decor, data = restaurants)
+model.three = lm(Price ~ Food + Decor + Location, data = restaurants)
+summary(model.two)
+summary(model.three)
+vif(model.two)
+vif(model.three)
+```
+
+2. Compare: Using the metrics described in Section 1 above (e.g. R-squared, RSE, coefficient magnitudes/significance, AIC/BIC, etc.) compare your different models. Which do you think is best?
+```{r}
+# Model.three seems to be slightly better when adding the Location of the restaurants to the regression
+
+```
+
+3. Conclude: Finally, draw some conclusions about the effect certain variables have on meal price.
+```{r}
+# Food and Decor have a large positive correlation with price, location has a negative correlation
+
+```
+
+## Question #3: Machine Learning Theory
+**Purpose: Demonstrate Theory of Lecture Material**
+
+1. MLR Assumptions: What are the 5 assumptions of multiple linear regression?
+```{r}
+# Linearity
+# Constant Var
+# Normality
+# Independent Errors
+# No multicollinearity
+
+```
+
+2. Multicollinearity: When multicollinearity exists, what can happen to your regression coefficients and standard errors?
+```{r}
+# They can be inflated because redundancies exist
+
+```
+
+
+## Question #4: Challenge Question
+1. We have discussed the false positive issue with hypothesis test. To understand this phenomenon, randomly generate a vector x and y = 0*x +residual. Regress y on x and then perform t-test to see if x is significant. Repeat the process multiple times, what is the probability that the t-test indicates significance?
+```{r}
+count = 0
+for (i in 1:10000){
+  x = rnorm(1000)
+  y = 0*x + rnorm(1000)
+  
+  if(t.test(x, y)$p.value < 0.05){
+    count = count + 1
+  }
+}
+
+count/10000
+```
