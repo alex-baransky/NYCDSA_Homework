@@ -107,7 +107,7 @@ mean((ridge.bestlambdatrain - y.test)^2)
 1. Lasso Regression: Repeat the entire analysis performed in question #1, but use the lasso regression method this time.
 ```{r}
 set.seed(0)
-lasso.models = glmnet(x, y, alpha = 0, lambda = grid)
+lasso.models = glmnet(x, y, alpha = 1, lambda = grid)
 lasso_coefs = coef(ridge.models)
 
 plot(lasso.models, xvar = "lambda", label = TRUE, main = "Lasso Regression")
