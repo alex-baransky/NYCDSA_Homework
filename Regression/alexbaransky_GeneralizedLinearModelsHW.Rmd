@@ -30,12 +30,12 @@ logit.all = glm(LC ~ .,
 
 4. Conduct and interpret an overall goodness of fit test for the model created in Part 3.
 ```{r}
-summary(logit.all)
+pchisq(logit.all$deviance, logit.all$df.residual, lower.tail = FALSE)
 ```
 
 5. Interpret the coefficient of gender.
 ```{r}
-print(exp(.56127))
+logit.all$coefficients
 # A coefficient of .56127 is the effect on the rate of change of the log odds. This means being female increases odds by 1.75
 ```
 
@@ -44,7 +44,7 @@ print(exp(.56127))
 logit.noBK = glm(LC ~ . - BK,
                     family = "binomial",
                     data = case2002)
-summary(logit.noBK)
+pchisq(logit.noBK$deviance, logit.noBK$df.residual, lower.tail = FALSE)
 ```
 
 7. Conduct and interpret a drop in deviance test comparing the two models you’ve created thus far. Which would you keep in favor of the other?
