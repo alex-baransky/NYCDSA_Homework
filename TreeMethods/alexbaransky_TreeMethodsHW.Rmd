@@ -69,7 +69,7 @@ summary(pruned.OJ)
 predict.prunedOJ = predict(pruned.OJ, test, type = "class")
 table(predict.prunedOJ, OJ[-train_index, 'Purchase'])
 (114+57)/214
-
+pruned.err = (17+26)/(114+26+17+57)
 # Pruned tree prediction is more accurate because original tree was overfit
 ```
 
@@ -127,12 +127,16 @@ table(predict.best.fit, OJ[-train_index, 'Purchase'])
 
 1. **Greedy: **What does it mean to say recursive binary splitting is a greedy process?
 ```{text}
-
+Recursive binary splitting is greedy because it will always split based on the highest increase in node purity. This means that the same split will be chosen each time because they are the best splits. This can result in overfitting or introduce bias in the model.
 ```
 
 2. **Metrics: **What metric is commonly used to determine the optimal split in a regression trees? What about in a classification tree? Explain these metrics.
 ```{text}
+Metric for regression tree split: deviance?
+Deviance is a measure of goodness of fit of the tree. Lower deviance results in a more accurate model
 
+Metric for classification tree split: Gini impurity
+Gini impurity is a metric that measures the probability that a randomly chosen element would be incorrectly labeled
 ```
 
 ## Question #3: Challenge Questions
@@ -140,15 +144,40 @@ table(predict.best.fit, OJ[-train_index, 'Purchase'])
 
 1. **Regularization: **Try to select the features with lasso, and then use the selected features to train the random forest. You might want to redo the cross-validation to select mtry now that the features are less. Is the result better than without lasso? Try to be careful when answering the last question.
 ```{r}
+library(glmnet)
+grid = 10^seq(5, -2, length = 100)
 
+x = model.matrix(Purchase ~ ., train)[, -1] #Dropping the intercept column.
+y = train$Purchase
+cv.lasso = cv.glmnet(x, y, lambda = grid, alpha = 1, nfolds = 10, family = 'binomial')
+lasso.OJ = glmnet(x, y, alpha = 1, lambda = cv.lasso$lambda.min, family = 'binomial')
+coef(lasso.OJ)
+
+set.seed(0)
+oob.err2 = numeric(6)
+for (mtry in 1:6) {
+  fit = randomForest(Purchase ~ StoreID + SpecialMM + LoyalCH + SalePriceCH + PriceDiff + PctDiscCH, data = train, mtry = mtry)
+  oob.err2[mtry] = fit$err.rate[500, 1]
+  cat("We're performing iteration", mtry, "\n")
+}
+
+plot(oob.err2, type = 'b')
+
+set.seed(0)
+rf.OJ = randomForest(Purchase ~ StoreID + SpecialMM + LoyalCH + SalePriceCH + PriceDiff + PctDiscCH, data = OJ, subset = train_index, mtry = 2)
+rf.OJ
+
+predict.rf = predict(rf.OJ, test, type='class')
+table(predict.rf, OJ[-train_index, 'Purchase'])
+(458+248)/856
 ```
 
 2. **Transform: **In order to boost with classification trees, we need to do a bit of data munging to transform the response variable. You may use the following lines of code to produce the copies of your dataset *OJ.train.indicator* and *OJ.test.indicator* that have a transformed response variable. (**NB:** You must replace *OJ.train* and *OJ.test* with whatever names you used in your own code)
 ```{r}
-# OJ.train.indicator = OJ.train
-# OJ.test.indicator = OJ.test
-# OJ.train.indicator$Purchase = as.vector(OJ.train$Purchase, mode = 'numeric') - 1
-# OJ.test.indicator$Purchase = as.vector(OJ.test$Purchase, mode = 'numeric') - 1
+OJ.train.indicator = OJ[train_index, ]
+OJ.test.indicator = OJ[-train_index, ]
+OJ.train.indicator$Purchase = as.vector(OJ.train.indicator$Purchase, mode = 'numeric') - 1
+OJ.test.indicator$Purchase = as.vector(OJ.test.indicator$Purchase, mode = 'numeric') - 1
 
 ```
 
@@ -158,17 +187,29 @@ table(predict.best.fit, OJ[-train_index, 'Purchase'])
     + An interaction depth of 4
     + A shrinkage of parameter 0.001
 ```{r}
+library(gbm)
 
+set.seed(0)
+boost.OJ.train = gbm(Purchase ~ ., data = OJ.train.indicator,
+                   distribution = "bernoulli",
+                   n.trees = 10000,
+                   interaction.depth = 4,
+                   shrinkage = 0.001)
 ```
 
 4. **Predict: **Predict your test set observations using the initial boosted model across up to 10,000 trees, considering groups of 100 trees at a time. (**Hint:** Use *type = 'response'* and round your predictions).
 ```{r}
-
+n.trees = seq(from = 100, to = 10000, by = 100)
+predmat = predict(boost.OJ.train, newdata = OJ.test.indicator, n.trees = n.trees, type = 'response')
+dim(predmat)
 ```
 
 5. **Evaluate: **Calculate and store the accuracy for each of the 100 models considered in Part 4. What is the minimum number of trees required to reach the maximum accuracy?
 ```{r}
-
+err = data.frame(colnames(predmat), with(OJ.test.indicator, apply((predmat - Purchase)^2, 2, mean)))
+colnames(err) = c('num.trees', 'mean.error')
+err[with(err, mean.error == min(mean.error)),]
+# 3600 trees
 ```
 
 6. **Visualize: **Plot the accuracies found in Part 5 against the number of trees. Add the following to the plot:
@@ -176,6 +217,8 @@ table(predict.best.fit, OJ[-train_index, 'Purchase'])
     + A horizontal line marking the best random forest accuracy on the test set
     + A horizontal line marking the best pruned tree accuracy on the test set.
 ```{r}
-
+plot(err)
+abline(h = min(oob.err), col = 'red')
+abline(h = pruned.err, col = 'green')
 ```
 
